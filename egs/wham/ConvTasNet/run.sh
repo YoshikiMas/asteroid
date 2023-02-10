@@ -6,12 +6,12 @@ set -o pipefail
 
 # Main storage directory. You'll need disk space to dump the WHAM mixtures and the wsj0 wav
 # files if you start from sphere files.
-storage_dir=
+storage_dir="/mnt/d/share/sound_data/wham"
 
 # If you start from the sphere files, specify the path to the directory and start from stage 0
 sphere_dir=  # Directory containing sphere files
 # If you already have wsj0 wav files, specify the path to the directory here and start from stage 1
-wsj0_wav_dir=
+wsj0_wav_dir="/mnt/d/share/sound_data/wsj0"
 # If you already have the WHAM mixtures, specify the path to the directory here and start from stage 2
 wham_wav_dir=
 # After running the recipe a first time, you can run it from stage 3 directly to train new models.
@@ -25,27 +25,9 @@ python_path=python
 
 # General
 stage=0  # Controls from which stage to start
-tag=""  # Controls the directory name associated to the experiment
+tag="asteroid_default"  # Controls the directory name associated to the experiment
 # You can ask for several GPUs using id (passed to CUDA_VISIBLE_DEVICES)
 id=$CUDA_VISIBLE_DEVICES
-
-# Data
-task=sep_clean  # Specify the task here (sep_clean, sep_noisy, enh_single, enh_both)
-sample_rate=8000
-mode=min
-nondefault_src=  # If you want to train a network with 3 output streams for example.
-
-# Training
-batch_size=8
-num_workers=8
-#optimizer=adam
-lr=0.001
-epochs=200
-
-# Architecture
-n_blocks=8
-n_repeats=3
-mask_nonlinear=relu
 
 # Evaluation
 eval_use_gpu=1
@@ -74,8 +56,8 @@ fi
 if [[ $stage -le  2 ]]; then
 	# Make json directories with min/max modes and sampling rates
 	echo "Stage 2: Generating json files including wav path and duration"
-	for sr_string in 8 16; do
-		for mode_option in min max; do
+	for sr_string in 8; do  # 8 16
+		for mode_option in min; do  # min max
 			tmp_dumpdir=data/wav${sr_string}k/$mode_option
 			echo "Generating json files in $tmp_dumpdir"
 			[[ ! -d $tmp_dumpdir ]] && mkdir -p $tmp_dumpdir

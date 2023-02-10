@@ -15,7 +15,7 @@ masknet:
 training:
   epochs: 200
   batch_size: 8
-  num_workers: 4
+  num_workers: 8
   half_lr: yes
   early_stop: yes
 # Optim config
