@@ -6,14 +6,14 @@ set -o pipefail
 
 # Main storage directory. You'll need disk space to dump the WHAM mixtures and the wsj0 wav
 # files if you start from sphere files.
-storage_dir="/mnt/d/share/sound_data/wham_storage"
+storage_dir=
 
 # If you start from the sphere files, specify the path to the directory and start from stage 0
 sphere_dir=  # Directory containing sphere files
 # If you already have wsj0 wav files, specify the path to the directory here and start from stage 1
-wsj0_wav_dir="/mnt/d/share/sound_data/wsj0"
+wsj0_wav_dir=
 # If you already have the WHAM mixtures, specify the path to the directory here and start from stage 2
-wham_wav_dir="/mnt/d/share/sound_data/wham_wav"
+wham_wav_dir="/home/ymasuyama/espnet/datasets/wham"
 # After running the recipe a first time, you can run it from stage 3 directly to train new models.
 
 # Path to the python you'll use for the experiment. Defaults to the current python
