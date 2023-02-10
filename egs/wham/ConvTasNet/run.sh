@@ -6,25 +6,26 @@ set -o pipefail
 
 # Main storage directory. You'll need disk space to dump the WHAM mixtures and the wsj0 wav
 # files if you start from sphere files.
-storage_dir="/mnt/d/share/sound_data/wham"
+storage_dir="/mnt/d/share/sound_data/wham_storage"
 
 # If you start from the sphere files, specify the path to the directory and start from stage 0
 sphere_dir=  # Directory containing sphere files
 # If you already have wsj0 wav files, specify the path to the directory here and start from stage 1
 wsj0_wav_dir="/mnt/d/share/sound_data/wsj0"
 # If you already have the WHAM mixtures, specify the path to the directory here and start from stage 2
-wham_wav_dir=
+wham_wav_dir="/mnt/d/share/sound_data/wham_wav"
 # After running the recipe a first time, you can run it from stage 3 directly to train new models.
 
 # Path to the python you'll use for the experiment. Defaults to the current python
 # You can run ./utils/prepare_python_env.sh to create a suitable python environment, paste the output here.
-python_path=python
+python_path=/opt/miniconda3/bin/python
 
 # Example usage
 # ./run.sh --stage 3 --tag my_tag --task sep_noisy --id 0,1
 
 # General
 stage=0  # Controls from which stage to start
+stop_stage=10000
 tag="asteroid_default"  # Controls the directory name associated to the experiment
 # You can ask for several GPUs using id (passed to CUDA_VISIBLE_DEVICES)
 id=$CUDA_VISIBLE_DEVICES
@@ -35,6 +36,11 @@ eval_use_gpu=1
 
 . utils/parse_options.sh
 
+sample_rate=8000
+task=sep_clean
+mode=min
+nondefault_src=  # If you want to train a network with 3 output streams for example.
+
 sr_string=$(($sample_rate/1000))
 suffix=wav${sr_string}k/$mode
 dumpdir=data/$suffix  # directory to put generated json file
@@ -43,17 +49,17 @@ train_dir=$dumpdir/tr
 valid_dir=$dumpdir/cv
 test_dir=$dumpdir/tt
 
-if [[ $stage -le  0 ]]; then
+if [ $stage -le  0 ] && [ ${stop_stage} -ge 0 ]; then
   echo "Stage 0: Converting sphere files to wav files"
   . local/convert_sphere2wav.sh --sphere_dir $sphere_dir --wav_dir $wsj0_wav_dir
 fi
 
-if [[ $stage -le  1 ]]; then
+if [ $stage -le  1 ] && [ ${stop_stage} -ge 1 ]; then
 	echo "Stage 1: Generating 8k and 16k WHAM dataset"
   . local/prepare_data.sh --wav_dir $wsj0_wav_dir --out_dir $wham_wav_dir --python_path $python_path
 fi
 
-if [[ $stage -le  2 ]]; then
+if [ $stage -le  2 ] && [ ${stop_stage} -ge 2 ]; then
 	# Make json directories with min/max modes and sampling rates
 	echo "Stage 2: Generating json files including wav path and duration"
 	for sr_string in 8; do  # 8 16
@@ -76,7 +82,7 @@ expdir=exp/train_convtasnet_${tag}
 mkdir -p $expdir && echo $uuid >> $expdir/run_uuid.txt
 echo "Results from the following experiment will be stored in $expdir"
 
-if [[ $stage -le 3 ]]; then
+if [ $stage -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   echo "Stage 3: Training"
   mkdir -p logs
   CUDA_VISIBLE_DEVICES=$id $python_path train.py \
@@ -84,13 +90,6 @@ if [[ $stage -le 3 ]]; then
 		--valid_dir $valid_dir \
 		--task $task \
 		--sample_rate $sample_rate \
-		--lr $lr \
-		--epochs $epochs \
-		--batch_size $batch_size \
-		--num_workers $num_workers \
-		--mask_act $mask_nonlinear \
-		--n_blocks $n_blocks \
-		--n_repeats $n_repeats \
 		--exp_dir ${expdir}/ | tee logs/train_${tag}.log
 	cp logs/train_${tag}.log $expdir/train.log
 
@@ -99,7 +98,7 @@ if [[ $stage -le 3 ]]; then
 	echo "wham/ConvTasNet" > $expdir/publish_dir/recipe_name.txt
 fi
 
-if [[ $stage -le 4 ]]; then
+if [ $stage -le 4 ] && [ ${stop_stage} -ge 4 ]; then
 	echo "Stage 4 : Evaluation"
 	CUDA_VISIBLE_DEVICES=$id $python_path eval.py \
 		--task $task \
