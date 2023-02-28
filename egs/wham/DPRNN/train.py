@@ -1,4 +1,5 @@
 import os
+import re
 import argparse
 import json
 
@@ -59,6 +60,12 @@ def main(conf):
     model = DPRNNTasNet(
         **conf["filterbank"], **conf["masknet"], sample_rate=conf["data"]["sample_rate"]
     )
+    
+    # You can load your pretrained model and start the training from it
+    if "use_pretrain" in conf:
+        if conf["use_pretrain"]["model_path"] is not None:
+            model = model.from_pretrained(conf["use_pretrain"]["model_path"])
+
     optimizer = make_optimizer(model.parameters(), **conf["optim"])
     # Define scheduler
     scheduler = None
@@ -93,6 +100,30 @@ def main(conf):
     if conf["training"]["early_stop"]:
         callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=30, verbose=True))
 
+    
+    # You can load your pretrained model and start the training from it
+    if "use_pretrain" in conf:
+        if conf["use_pretrain"]["ckpt_path"] is not None:
+            state_dict = torch.load(conf["use_pretrain"]["ckpt_path"])
+            system.load_state_dict(state_dict=state_dict["state_dict"])
+            epoch_pattern = r"epoch=(\d+)-"
+            past_epoch = re.search(epoch_pattern, conf["use_pretrain"]["ckpt_path"]).group(1)
+            conf["training"]["epochs"] -= int(past_epoch)
+            assert conf["training"]["epochs"] > 0, "The number of the rest epochs should be greater than one"
+
+        elif conf["use_pretrain"]["model_path"] is not None:
+            pass  # The pretrained model was alreday loaded in the model definition
+
+        else:
+            raise ValueError("Couldn't get the pretrained model")
+
+    # You can change the precision for training by adding the following line to conf.yml
+    if "change_precision" in conf:
+        precision = conf["change_precision"]["precision"]
+    
+    else:
+        precision = 32
+
     trainer = pl.Trainer(
         max_epochs=conf["training"]["epochs"],
         callbacks=callbacks,
@@ -101,6 +132,7 @@ def main(conf):
         strategy="ddp",
         devices="auto",
         gradient_clip_val=conf["training"]["gradient_clipping"],
+        precision=precision,
     )
     trainer.fit(system)
 
