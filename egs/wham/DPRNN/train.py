@@ -60,7 +60,7 @@ def main(conf):
     model = DPRNNTasNet(
         **conf["filterbank"], **conf["masknet"], sample_rate=conf["data"]["sample_rate"]
     )
-    
+
     # You can load your pretrained model and start the training from it
     if "use_pretrain" in conf:
         if conf["use_pretrain"]["model_path"] is not None:
@@ -100,7 +100,6 @@ def main(conf):
     if conf["training"]["early_stop"]:
         callbacks.append(EarlyStopping(monitor="val_loss", mode="min", patience=30, verbose=True))
 
-    
     # You can load your pretrained model and start the training from it
     if "use_pretrain" in conf:
         if conf["use_pretrain"]["ckpt_path"] is not None:
@@ -120,7 +119,7 @@ def main(conf):
     # You can change the precision for training by adding the following line to conf.yml
     if "change_precision" in conf:
         precision = conf["change_precision"]["precision"]
-    
+
     else:
         precision = 32
 

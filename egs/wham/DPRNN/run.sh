@@ -36,7 +36,7 @@ eval_use_gpu=1
 
 . utils/parse_options.sh
 
-sample_rate=8000
+sample_rate=16000
 task=sep_clean
 mode=min
 nondefault_src=  # If you want to train a network with 3 output streams for example.
@@ -62,8 +62,8 @@ fi
 if [ $stage -le  2 ] && [ ${stop_stage} -ge 2 ]; then
 	# Make json directories with min/max modes and sampling rates
 	echo "Stage 2: Generating json files including wav path and duration"
-	for sr_string in 8; do  # 8 16
-		for mode_option in min; do  # min max
+	for sr_string in 8 16; do  # 8 16
+		for mode_option in min max; do  # min max
 			tmp_dumpdir=data/wav${sr_string}k/$mode_option
 			echo "Generating json files in $tmp_dumpdir"
 			[[ ! -d $tmp_dumpdir ]] && mkdir -p $tmp_dumpdir
@@ -106,4 +106,19 @@ if [ $stage -le 4 ] && [ ${stop_stage} -ge 4 ]; then
 		--use_gpu $eval_use_gpu \
 		--exp_dir ${expdir} | tee logs/eval_${tag}.log
 	cp logs/eval_${tag}.log $expdir/eval.log
+fi
+
+if [ $stage -le 5 ] && [ ${stop_stage} -ge 5 ]; then
+	echo "Stage 5 : Evaluation on SparseLibriMix"
+	all_overlap="0.2 0.4 0.6 0.8 1"
+	sparselibrimix_dir="/home/ymasuyama/SparseLibriMix/data"
+	n_src=2
+	for ovr_ratio in 0 $all_overlap; do
+		CUDA_VISIBLE_DEVICES=$id $python_path eval_on_spl.py \
+			--task $task \
+			--test_dir "${sparselibrimix_dir}/sparse_${n_src}_${ovr_ratio}" \
+			--use_gpu $eval_use_gpu \
+			--exp_dir ${expdir} | tee logs/eval_${tag}_${ovr_ratio}.log
+		cp logs/eval_${tag}_${ovr_ratio}.log $expdir/eval_${ovr_ratio}.log
+	done
 fi
