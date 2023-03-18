@@ -244,22 +244,15 @@ class SkiMBlock(nn.Module):
         assert H == self.seg_input_size
 
         # Construct chunks
-        if self.chunk_size == self.hop_size:
-            x, rest = self._padfeature(x)
-            x = x.permute(0, 2, 1).contiguous()
-            x = x.view(B, -1, self.chunk_size, H)  # [B, S (number of chunks), chunk_size, H]
-            S = x.shape[1]  # number of chunks
-
-        else:
-            x = unfold(
-                x.unsqueeze(-1),
-                kernel_size=(self.chunk_size, 1),
-                padding=(self.chunk_size, 0),
-                stride=(self.hop_size, 1),
-            )
-            S = x.shape[-1]  # number of chunks
-            x = x.reshape(B, H, self.chunk_size, S)
-            x = x.permute(0, 3, 2, 1).contiguous()  # [B, S (number of chunks), chunk_size, H]
+        x = unfold(
+            x.unsqueeze(-1),
+            kernel_size=(self.chunk_size, 1),
+            padding=(self.chunk_size, 0),
+            stride=(self.hop_size, 1),
+        )
+        S = x.shape[-1]  # number of chunks
+        x = x.reshape(B, H, self.chunk_size, S)
+        x = x.permute(0, 3, 2, 1).contiguous()  # [B, S (number of chunks), chunk_size, H]
 
         # Main SkiM processing
         x = x.view(B*S, self.chunk_size, H).contiguous()
@@ -273,21 +266,15 @@ class SkiMBlock(nn.Module):
 
         # Reconstruct from chunks
         x = x.permute(0, 3, 2, 1).contiguous()  # [B, H, chunk_size, S (number of chunks)]
-        if self.chunk_size == self.hop_size:
-            x = x.view(B, H, self.chunk_size*S)
-            x = x[..., :T]
+        x = fold(
+            x.reshape(B, self.chunk_size*H, S),
+            (T, 1),
+            kernel_size=(self.chunk_size, 1),
+            padding=(self.chunk_size, 0),
+            stride=(self.hop_size, 1),
+        )
 
-        else:
-            x = fold(
-                x.reshape(B, self.chunk_size*H, S),
-                (T, 1),
-                kernel_size=(self.chunk_size, 1),
-                padding=(self.chunk_size, 0),
-                stride=(self.hop_size, 1),
-            )
-            x = x[..., 0]
-
-        return x
+        return x[..., 0]
 
     def _padfeature(self, x):
         B, H, T = x.size()
