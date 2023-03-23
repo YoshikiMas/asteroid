@@ -116,7 +116,7 @@ if [ $stage -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     fi
   fi
 
-  $python_path eval.py \
+  CUDA_VISIBLE_DEVICES=$id $python_path eval.py \
     --exp_dir $expdir \
     --test_dir $test_dir \
   	--out_dir $out_dir \
