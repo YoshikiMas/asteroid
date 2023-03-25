@@ -238,7 +238,7 @@ class WERTracker:
         self.output_txt_list = []
         self.transcriptions = []
         self.true_txt_list = []
-        self.sample_rate = int(d.data_frame[d.data_frame["name"] == model_name]["fs"])
+        self.sample_rate = 16000 # int(d.data_frame[d.data_frame["name"] == model_name]["fs"])
         self.trans_df = trans_df
         self.trans_dic = self._df_to_dict(trans_df)
         self.mix_counter = Counter()

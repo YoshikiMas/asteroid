@@ -24,7 +24,6 @@ stop_stage=10000
 tag="asteroid_default"  # Controls the directory name associated to the experiment
 # You can ask for several GPUs using id (passed to CUDA_VISIBLE_DEVICES)
 id=$CUDA_VISIBLE_DEVICES
-out_dir=librimix # Controls the directory name associated to the evaluation results inside the experiment directory
 
 # Data config
 sample_rate=16000
@@ -36,8 +35,8 @@ segment=2
 eval_use_gpu=1
 # Need to --compute_wer 1 --eval_mode max to be sure the user knows all the metrics
 # are for the all mode.
-compute_wer=0
-eval_mode=
+compute_wer=1
+eval_mode=max
 
 . utils/parse_options.sh
 
@@ -50,6 +49,7 @@ dumpdir=data/$suffix  # directory to put generated json file
 if [ -z "$eval_mode" ]; then
   eval_mode=$mode
 fi
+out_dir=librimix_$eval_mode
 
 train_dir=data/$suffix/train-360
 valid_dir=data/$suffix/dev
@@ -110,13 +110,15 @@ if [ $stage -le 4 ] && [ ${stop_stage} -ge 4 ]; then
     # Install espnet if not instaled
     if ! python -c "import espnet" &> /dev/null; then
         echo 'This recipe requires espnet. Installing requirements.'
-        $python_path -m pip install espnet_model_zoo
-        $python_path -m pip install jiwer
-        $python_path -m pip install tabulate
+		$python_path -m pip install espnet==202301
+        $python_path -m pip install espnet_model_zoo==0.1.7
+        $python_path -m pip install jiwer==2.2.0
+        $python_path -m pip install tabulate==0.9.0
+		$python_path -m pip uninstall protobuf
     fi
   fi
 
-  $python_path eval.py \
+  CUDA_VISIBLE_DEVICES=$id $python_path eval.py \
     --exp_dir $expdir \
     --test_dir $test_dir \
   	--out_dir $out_dir \

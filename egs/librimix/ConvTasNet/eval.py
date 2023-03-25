@@ -9,6 +9,7 @@ import pandas as pd
 from tqdm import tqdm
 from pprint import pprint
 from pathlib import Path
+import warnings
 
 from asteroid.metrics import get_metrics
 from asteroid.data.librimix_dataset import LibriMix
@@ -19,7 +20,7 @@ from asteroid.utils import tensors_to_device
 from asteroid.dsp.normalization import normalize_estimates
 from asteroid.metrics import WERTracker, MockWERTracker
 
-
+warnings.simplefilter('ignore')  # For ignoring espnet related warnings
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--test_dir", type=str, required=True, help="Test directory including the csv files"
@@ -49,7 +50,7 @@ parser.add_argument(
 
 COMPUTE_METRICS = ["si_sdr", "sdr", "sir", "sar", "stoi"]
 ASR_MODEL_PATH = (
-    "Shinji Watanabe/librispeech_asr_train_asr_transformer_e18_raw_bpe_sp_valid.acc.best"
+    "pyf98/librispeech_conformer"
 )
 
 
@@ -199,5 +200,5 @@ if __name__ == "__main__":
             "Warning : the task used to test is different than "
             "the one from training, be sure this is what you want."
         )
-
+    torch.backends.cudnn.deterministic = True
     main(arg_dic)
