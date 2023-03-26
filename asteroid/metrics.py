@@ -380,7 +380,7 @@ class WERTracker:
             self.est_counter[k] for k in ["hits", "substitutions", "deletions", "insertions"]
         ]
         #                   Snt               Wrd         HSDI       Err     S.Err
-        for_mix = [len(self.mix_counter), mix_n_word] + mix_hsdi + [mix_wer, "-"]
+        for_mix = [len(self.mix_counter), mix_n_word] + mix_hsdi + [mix_wer, "-"]  # len(self.mix_counter) does not mean the number of sentences
         for_clean = [len(self.clean_counter), clean_n_word] + clean_hsdi + [clean_wer, "-"]
         for_est = [len(self.est_counter), est_n_word] + est_hsdi + [est_wer, "-"]
 
