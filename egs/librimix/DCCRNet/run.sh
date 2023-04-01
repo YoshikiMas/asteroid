@@ -38,7 +38,7 @@ task=enh_single  # one of 'enh_single', 'enh_both', 'sep_clean', 'sep_noisy'
 eval_use_gpu=1
 # Need to --compute_wer 1 --eval_mode max to be sure the user knows all the metrics
 # are for the all mode.
-compute_wer=0
+compute_wer=1
 eval_mode=
 
 . utils/parse_options.sh
@@ -107,13 +107,15 @@ if [ $stage -le 4 ] && [ ${stop_stage} -ge 4 ]; then
 	    exit 1
 	  fi
 
-    # Install espnet if not instaled
-    if ! python -c "import espnet" &> /dev/null; then
-        echo 'This recipe requires espnet. Installing requirements.'
-        $python_path -m pip install espnet_model_zoo
-        $python_path -m pip install jiwer
-        $python_path -m pip install tabulate
-    fi
+	# Install espnet if not instaled
+	if ! python -c "import espnet" &> /dev/null; then
+	  echo 'This recipe requires espnet. Installing requirements.'
+	  $python_path -m pip install espnet==202301
+	  $python_path -m pip install espnet_model_zoo==0.1.7
+	  $python_path -m pip install jiwer==2.2.0
+	  $python_path -m pip install tabulate==0.9.0
+	  $python_path -m pip uninstall protobuf
+	fi
   fi
 
   CUDA_VISIBLE_DEVICES=$id $python_path eval.py \
