@@ -78,12 +78,13 @@ class FullSubMaskNet(nn.Module):
             noisy_mag: noisy magnitude spectrogram
 
         Returns:
-            The real part and imag part of the enhanced spectrogram
+            The complex ratio mask
 
         Shapes:
-            noisy_mag: [B, 1, F, T]
-            return: [B, 2, F, T]
+            noisy_mag: [B, F, T]
+            return: [B, F, T]
         """
+        noisy_mag = torch.unsqueeze(noisy_mag, 1)  # [B, 1, F, T] (Originalと同じ)
         assert noisy_mag.dim() == 4
         noisy_mag = functional.pad(noisy_mag, [0, self.look_ahead])  # Pad the look ahead
         batch_size, num_channels, num_freqs, num_frames = noisy_mag.size()
@@ -127,7 +128,7 @@ class FullSubMaskNet(nn.Module):
             num_frames,
         )
 
-        # [B * F, (F_s + F_f), T] => [B * F, 2, T] => [B, F, 2, T]
+        # [B * F, (F_s + F_f), T] => [B * F, 2, T] => [B, 2, F, T]
         sb_mask = self.sb_model(sb_input)
         sb_mask = (
             sb_mask.reshape(batch_size, num_freqs, 2, num_frames)
@@ -135,7 +136,8 @@ class FullSubMaskNet(nn.Module):
             .contiguous()
         )
 
-        output = sb_mask[:, :, :, self.look_ahead :]
+        # output = sb_mask[:, :, :, self.look_ahead :]
+        output = sb_mask[:, 0, :, self.look_ahead :] + 1j * sb_mask[:, 1, :, self.look_ahead :]
         return output
 
     # FullSubMaskNetクラス内でself.〇〇で呼ばれている関数 (audio_zen.model.base_model.BaseModel):
@@ -569,7 +571,7 @@ def drop_band(input, num_groups=2):
 
 if __name__ == "__main__":
     with torch.no_grad():
-        noisy_mag = torch.rand(1, 1, 257, 63)
+        noisy_mag = torch.rand(10, 257, 63)  # [B, F, T]
         model = FullSubMaskNet(
             num_freqs=257,
             look_ahead=2,
@@ -585,3 +587,4 @@ if __name__ == "__main__":
             weight_init=False,
         )
         print(model(noisy_mag).shape)
+        print(model(noisy_mag).dtype)  # torch.complex64
