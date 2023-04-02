@@ -1,10 +1,21 @@
 # Filterbank config
 filterbank:
   stft_n_filters: 512
-  stft_kernel_size: 400
-  stft_stride: 100
+  stft_kernel_size: 512  # win_lengthに対応 (https://github.com/asteroid-team/asteroid-filterbanks/blob/master/asteroid_filterbanks/stft_fb.py#L12)
+  stft_stride: 256
 masknet:
-  architecture: DCCRN-CL
+  sb_num_neighbors: 15
+  fb_num_neighbors: 0
+  num_freqs: 257
+  look_ahead: 2
+  sequence_model: LSTM
+  fb_output_activate_function: ReLU
+  sb_output_activate_function: false
+  fb_model_hidden_size: 512
+  sb_model_hidden_size: 384
+  weight_init: false
+  norm_type: offline_laplace_norm
+  num_groups_in_drop_band: 1  # 時間領域に戻す場合は2以上にするとエラーが生じる．
 data:
   task: enh_single
   train_dir: data/wav16k/max/train-360
@@ -14,7 +25,7 @@ data:
   segment: 4
 training:
   epochs: 200
-  batch_size: 12
+  batch_size: 8
   num_workers: 4
   half_lr: yes
   early_stop: yes

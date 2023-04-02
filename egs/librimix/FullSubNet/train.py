@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 
-from asteroid.models import DCCRNet
+from asteroid.models import FullSubNet
 from asteroid.data import LibriMix
 from asteroid.engine.optimizers import make_optimizer
 from asteroid.engine.system import System
@@ -56,9 +56,9 @@ def main(conf):
         num_workers=conf["training"]["num_workers"],
         drop_last=True,
     )
-    conf["masknet"].update({"n_src": conf["data"]["n_src"]})
+    # conf["masknet"].update({"n_src": conf["data"]["n_src"]})
 
-    model = DCCRNet(
+    model = FullSubNet(
         **conf["filterbank"], **conf["masknet"], sample_rate=conf["data"]["sample_rate"]
     )
     optimizer = make_optimizer(model.parameters(), **conf["optim"])
