@@ -11,6 +11,7 @@ from .lstm_tasnet import LSTMTasNet
 from .demask import DeMask
 from .x_umx import XUMX
 from .skim_tasnet import SkiMTasNet
+from .fullsubnet import FullSubNet
 
 # Sharing-related
 from .publisher import save_publishable, upload_publishable
@@ -28,6 +29,7 @@ __all__ = [
     "DCCRNet",
     "XUMX",
     "SkiMTasNet",
+    "FullSubNet",
     "save_publishable",
     "upload_publishable",
 ]
