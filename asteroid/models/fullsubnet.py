@@ -1,8 +1,10 @@
 import torch
 from asteroid_filterbanks import make_enc_dec
 from asteroid_filterbanks.transforms import from_torch_complex, to_torch_complex
-from .base_models import BaseEncoderMaskerDecoder
+
 from ..masknn.fullsubnet_masker import FullSubMaskNet
+from .base_models import BaseEncoderMaskerDecoder
+
 
 class FullSubNet(BaseEncoderMaskerDecoder):
     """Abstract
@@ -16,10 +18,6 @@ class FullSubNet(BaseEncoderMaskerDecoder):
     def __init__(
         self, *args, stft_n_filters=512, stft_kernel_size=512, stft_stride=256, sample_rate=16000, **masknet_kwargs
     ):
-        # 確認用
-        # print(stft_n_filters, stft_kernel_size, stft_stride, sample_rate)  # 512, 512, 256, 16000
-        # print(args)  # ()
-        # print(masknet_kwargs)  # conf.ymlのmasknetと同じ (辞書)
 
         encoder, decoder = make_enc_dec(
             "stft",
