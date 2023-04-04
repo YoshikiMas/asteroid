@@ -37,12 +37,12 @@ class FullSubMaskNet(nn.Module):
         """
         # super().__init__()  # audio_zen.model.base_model.BaseModelを継承し__init__関数を呼び出す．
         super(FullSubMaskNet, self).__init__()  # TODO: 上記に対応しているか確認
-        
+
         assert sequence_model in (
             "GRU",
             "LSTM",
         ), f"{self.__class__.__name__} only support GRU and LSTM."
-        
+
         self.fb_model = SequenceModel(
             input_size=num_freqs,
             output_size=num_freqs,
@@ -88,14 +88,10 @@ class FullSubMaskNet(nn.Module):
         assert noisy_mag.dim() == 4
         noisy_mag = functional.pad(noisy_mag, [0, self.look_ahead])  # Pad the look ahead
         batch_size, num_channels, num_freqs, num_frames = noisy_mag.size()
-        assert (
-            num_channels == 1
-        ), f"{self.__class__.__name__} takes the mag feature as inputs."
+        assert num_channels == 1, f"{self.__class__.__name__} takes the mag feature as inputs."
 
         # Fullband model
-        fb_input = self.norm(noisy_mag).reshape(
-            batch_size, num_channels * num_freqs, num_frames
-        )
+        fb_input = self.norm(noisy_mag).reshape(batch_size, num_channels * num_freqs, num_frames)
         fb_output = self.fb_model(fb_input).reshape(batch_size, 1, num_freqs, num_frames)
 
         # Unfold fullband model's output, [B, N=F, C, F_f, T]. N is the number of sub-band units
@@ -130,11 +126,7 @@ class FullSubMaskNet(nn.Module):
 
         # [B * F, (F_s + F_f), T] => [B * F, 2, T] => [B, 2, F, T]
         sb_mask = self.sb_model(sb_input)
-        sb_mask = (
-            sb_mask.reshape(batch_size, num_freqs, 2, num_frames)
-            .permute(0, 2, 1, 3)
-            .contiguous()
-        )
+        sb_mask = sb_mask.reshape(batch_size, num_freqs, 2, num_frames).permute(0, 2, 1, 3).contiguous()
 
         # output = sb_mask[:, :, :, self.look_ahead :]
         output = sb_mask[:, 0, :, self.look_ahead :] + 1j * sb_mask[:, 1, :, self.look_ahead :]
@@ -160,7 +152,7 @@ class FullSubMaskNet(nn.Module):
             )
         return norm
 
-    # norm_wrapper内でself.〇〇で呼ばれている関数 (audio_zen.model.base_model.BaseModel): 
+    # norm_wrapper内でself.〇〇で呼ばれている関数 (audio_zen.model.base_model.BaseModel):
     # offline_laplace_norm, cumulative_laplace_norm, offline_gaussian_norm, cumulative_layer_norm, forgetting_norm
     @staticmethod
     def offline_laplace_norm(input):
@@ -302,15 +294,9 @@ class FullSubMaskNet(nn.Module):
         for frame_idx in range(num_frames):
             if frame_idx < sample_length:
                 alp = torch.min(torch.tensor([(frame_idx - 1) / (frame_idx + 1), alpha]))
-                mu = alp * mu + (1 - alp) * torch.mean(
-                    input[:, :, frame_idx], dim=1
-                ).reshape(
-                    batch_size, 1
-                )  # [B, 1]
+                mu = alp * mu + (1 - alp) * torch.mean(input[:, :, frame_idx], dim=1).reshape(batch_size, 1)  # [B, 1]
             else:
-                current_frame_mu = torch.mean(input[:, :, frame_idx], dim=1).reshape(
-                    batch_size, 1
-                )  # [B, 1]
+                current_frame_mu = torch.mean(input[:, :, frame_idx], dim=1).reshape(batch_size, 1)  # [B, 1]
                 mu = alpha * mu + (1 - alpha) * current_frame_mu
 
             mu_list.append(mu)
@@ -391,7 +377,7 @@ class FullSubMaskNet(nn.Module):
                     init.orthogonal_(param.data)
                 else:
                     init.normal_(param.data)
-    
+
     @staticmethod
     def freq_unfold(input, num_neighbors):
         """Split the overlapped subband units along the frequency axis.
@@ -426,6 +412,7 @@ class FullSubMaskNet(nn.Module):
         output = output.permute(0, 4, 1, 2, 3).contiguous()  # [B, N, C, F_s, T]
 
         return output
+
 
 # from audio_zen.model.module.sequence_model import SequenceModel
 class SequenceModel(nn.Module):
@@ -501,9 +488,7 @@ class SequenceModel(nn.Module):
             elif output_activate_function == "PReLU":
                 self.activate_function = nn.PReLU()
             else:
-                raise NotImplementedError(
-                    f"Not implemented activation function {self.activate_function}"
-                )
+                raise NotImplementedError(f"Not implemented activation function {self.activate_function}")
 
         self.output_activate_function = output_activate_function
         self.output_size = output_size
@@ -528,6 +513,7 @@ class SequenceModel(nn.Module):
             o = self.activate_function(o)
         o = o.permute(0, 2, 1)  # [B, T, F] => [B, F, T]
         return o
+
 
 # from audio_zen.acoustics.feature import drop_band
 def drop_band(input, num_groups=2):
@@ -554,15 +540,11 @@ def drop_band(input, num_groups=2):
 
     output = []
     for group_idx in range(num_groups):
-        samples_indices = torch.arange(
-            group_idx, batch_size, num_groups, device=input.device
-        )
+        samples_indices = torch.arange(group_idx, batch_size, num_groups, device=input.device)
         freqs_indices = torch.arange(group_idx, num_freqs, num_groups, device=input.device)
 
         selected_samples = torch.index_select(input, dim=0, index=samples_indices)
-        selected = torch.index_select(
-            selected_samples, dim=2, index=freqs_indices
-        )  # [B, C, F // num_groups, T]
+        selected = torch.index_select(selected_samples, dim=2, index=freqs_indices)  # [B, C, F // num_groups, T]
 
         output.append(selected)
 
